@@ -342,16 +342,19 @@ function callScript(params) {
   var qs = Object.keys(params).map(function(k){
     return encodeURIComponent(k)+'='+encodeURIComponent(typeof params[k]==='object'?JSON.stringify(params[k]):params[k]);
   }).join('&');
-  return fetch(SCRIPT_URL+'?'+qs, { method:'GET', redirect:'follow' })
-    .then(function(r){ return r.json(); });
+  return fetch(SCRIPT_URL+'?'+qs, { method:'GET', redirect:'follow', mode:'cors' })
+    .then(function(r){ return r.json(); })
+    .catch(function(){ 
+      return fetch(SCRIPT_URL+'?'+qs, { method:'GET', mode:'no-cors' })
+        .then(function(){ return {}; });
+    });
 }
 
 function postToScript(params) {
   var qs = Object.keys(params).map(function(k){
     return encodeURIComponent(k)+'='+encodeURIComponent(typeof params[k]==='object'?JSON.stringify(params[k]):params[k]);
   }).join('&');
-  // POST as query string on URL — Apps Script reads e.parameter on GET too, this is most reliable
-  return fetch(SCRIPT_URL+'?'+qs, { method:'GET', redirect:'follow' }).catch(function(){});
+  return fetch(SCRIPT_URL+'?'+qs, { method:'GET', mode:'no-cors' }).catch(function(){});
 }
 
 function fetchMenu() {
