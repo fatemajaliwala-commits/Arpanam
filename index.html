@@ -339,22 +339,27 @@ function showPage(id) {
 // fetch with redirect:follow works from GitHub Pages (CORS allowed by Apps Script)
 // no-cors POST works for writes (fire-and-forget)
 function callScript(params) {
-  var qs = Object.keys(params).map(function(k){
-    return encodeURIComponent(k)+'='+encodeURIComponent(typeof params[k]==='object'?JSON.stringify(params[k]):params[k]);
-  }).join('&');
-  return fetch(SCRIPT_URL+'?'+qs, { method:'GET', redirect:'follow', mode:'cors' })
-    .then(function(r){ return r.json(); })
-    .catch(function(){ 
-      return fetch(SCRIPT_URL+'?'+qs, { method:'GET', mode:'no-cors' })
-        .then(function(){ return {}; });
-    });
+  return new Promise(function(resolve) {
+    var cbName = 'cb' + Date.now();
+    params.callback = cbName;
+    var qs = Object.keys(params).map(function(k){
+      return encodeURIComponent(k)+'='+encodeURIComponent(typeof params[k]==='object'?JSON.stringify(params[k]):params[k]);
+    }).join('&');
+    window[cbName] = function(data) {
+      resolve(data);
+      delete window[cbName];
+      document.getElementById(cbName) && document.getElementById(cbName).remove();
+    };
+    var s = document.createElement('script');
+    s.id = cbName;
+    s.src = SCRIPT_URL + '?' + qs;
+    document.body.appendChild(s);
+    setTimeout(function(){ resolve({}); }, 8000);
+  });
 }
 
 function postToScript(params) {
-  var qs = Object.keys(params).map(function(k){
-    return encodeURIComponent(k)+'='+encodeURIComponent(typeof params[k]==='object'?JSON.stringify(params[k]):params[k]);
-  }).join('&');
-  return fetch(SCRIPT_URL+'?'+qs, { method:'GET', mode:'no-cors' }).catch(function(){});
+  return callScript(params).catch(function(){});
 }
 
 function fetchMenu() {
